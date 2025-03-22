@@ -348,7 +348,7 @@ pegar_total_linhas_colunas (void)
 		// vamos usar CUD e CUF com o argumento de 999 para irmos pro
 		// final da tela então vamos pegar a posicao do cursor. No final
 		// voltamos o cursor para a posição inicial
-		salvar_posicao_do_cursor ();
+		salvar_posicao_do_cursor (NULL);
 		const char *sequencia_de_escape_para_pegar_ultima_pos = "\033[999B\033[999C";
 		write (
 				STDOUT_FILENO,
@@ -359,7 +359,7 @@ pegar_total_linhas_colunas (void)
 				&estado_editor.linhas, 
 				&estado_editor.colunas
 		);
-		restaurar_posicao_do_cursor ();
+		restaurar_posicao_do_cursor (NULL);
 		if (estado_editor.linhas == -1 || estado_editor.colunas == -1)
 			fatal ("Não foi possível pegar as dimensões da tela");
 		
@@ -369,69 +369,117 @@ pegar_total_linhas_colunas (void)
 }
 
 
+// Se for o construtor for nulo a operação acontece imediatamente
 void
-salvar_posicao_do_cursor (void)
+salvar_posicao_do_cursor (struct construtor_string *construtor)
 {
+   
 	const char *sequencia_de_escape_que_salva_a_posicao_do_cursor = "\0337";
-	write (STDOUT_FILENO, sequencia_de_escape_que_salva_a_posicao_do_cursor, strlen (sequencia_de_escape_que_salva_a_posicao_do_cursor));
+  if (construtor == NULL)
+  {
+    write (STDOUT_FILENO, sequencia_de_escape_que_salva_a_posicao_do_cursor, strlen (sequencia_de_escape_que_salva_a_posicao_do_cursor));
+  }
+  else
+  {
+    adicionar_string_construtor_string (construtor, sequencia_de_escape_que_salva_a_posicao_do_cursor, '\0'); 
+  }
 }
 
 void
-restaurar_posicao_do_cursor (void)
+restaurar_posicao_do_cursor (struct construtor_string *construtor)
 {
 	const char *sequencia_de_escape_que_restaura_a_posicao_do_cursor = "\0338";
-	write (STDOUT_FILENO, sequencia_de_escape_que_restaura_a_posicao_do_cursor, strlen (sequencia_de_escape_que_restaura_a_posicao_do_cursor));
+  if (construtor == NULL)
+  {
+    write (STDOUT_FILENO, sequencia_de_escape_que_restaura_a_posicao_do_cursor, strlen (sequencia_de_escape_que_restaura_a_posicao_do_cursor));
+  }
+  else
+  {
+    adicionar_string_construtor_string (construtor, sequencia_de_escape_que_restaura_a_posicao_do_cursor, '\0');
+  }
 }
 
+//Essa função precisa de um construtor
 void
-desenhar_til (void)
+desenhar_til (struct construtor_string *construtor)
 {
-	salvar_posicao_do_cursor ();
+	salvar_posicao_do_cursor (construtor);
 	const char *sequencia_de_escape_que_move_uma_linha = "\033[1B";
 	const char *sequencia_de_escape_que_move_uma_coluna = "\033[1D";
 	for (int i = 0; i < estado_editor.linhas; i++)
 	{
-		adicionar_string_construtor_string (estado_editor.construtor, sequencia_de_escape_que_move_uma_linha, '\0');
-		adicionar_string_construtor_string  (estado_editor.construtor, sequencia_de_escape_que_move_uma_coluna, '\0');
-		adicionar_caractere_construtor_string (estado_editor.construtor, '~');
+		adicionar_string_construtor_string (construtor, sequencia_de_escape_que_move_uma_linha, '\0');
+		adicionar_string_construtor_string  (construtor, sequencia_de_escape_que_move_uma_coluna, '\0');
+		adicionar_caractere_construtor_string (construtor, '~');
 	}
-	write (STDOUT_FILENO, estado_editor.construtor->buffer, estado_editor.construtor->tamanho);
-	limpar_construtor_string (estado_editor.construtor);
-	restaurar_posicao_do_cursor ();
+	write (STDOUT_FILENO, estado_editor.construtor->buffer, construtor->tamanho);
+	restaurar_posicao_do_cursor (construtor);
 	
 }
 
+// Se o construtor for nulo a funçao vai chamar o write
+// Se o construtor não for nulo a sequencia de escape e
+// adicionada ao construtor
 void
-esconder_cursor (void)
+esconder_cursor (struct construtor_string *construtor)
 {
   // NOTA: olhar a essa sequência de escape e os modos do vt-100
   const char *sequencia_esconde_cursor = "\033[?25l"; 
-  write (STDOUT_FILENO, sequencia_esconde_cursor, strlen(sequencia_esconde_cursor);
+  if (construtor == NULL)
+  {
+    write (STDOUT_FILENO, sequencia_esconde_cursor, strlen(sequencia_esconde_cursor));
+  }
+  else
+  {
+    adicionar_string_construtor_string (construtor, sequencia_esconde_cursor,'\0');
+  }
 }
 
-void
-restaurar_cursor (void)
-{
- const char  
 
+//Essa função faz com que o cursor escondido
+//pela função esconder_cursos volte para a tela
+void
+restaurar_cursor (struct construtor_string *construtor)
+{
+  //NOTA: olhar essa sequência de escape e os modos do vt-100 
+  const char *sequencia_restaura_cursor = "\033[?25h"; 
+  if (construtor == NULL)
+  {
+    write (STDOUT_FILENO, sequencia_restaura_cursor, strlen(sequencia_restaura_cursor));
+  }
+  else
+  {
+    adicionar_string_construtor_string (construtor, sequencia_restaura_cursor, '\0');
+  }
 }
 
 void
 atualizar_tela_do_editor (void)
 {
-  esconder_cursor ();
-	limpar_tela ();
-	desenhar_til ();
-  restaurar_cursor (); 
+  esconder_cursor (estado_editor.construtor);
+	limpar_tela (estado_editor.construtor);
+	desenhar_til (estado_editor.construtor);
+  restaurar_cursor (estado_editor.construtor); 
+  write (STDOUT_FILENO, estado_editor.construtor->buffer, estado_editor.construtor->tamanho);
+	limpar_construtor_string (estado_editor.construtor);
 }
 
+// Se o construtor for nulo a operação é feita na hora
 void
-limpar_tela (void)
+limpar_tela (struct construtor_string *construtor)
 {
-	const char *sequencia_de_escape_que_limpa_a_tela = "\033[2J";
-	write (STDOUT_FILENO, sequencia_de_escape_que_limpa_a_tela, strlen (sequencia_de_escape_que_limpa_a_tela));
-	const char *sequencia_de_escape_que_reposiciona_o_cursor = "\033[1;1H";
-	write (STDOUT_FILENO, sequencia_de_escape_que_reposiciona_o_cursor, strlen (sequencia_de_escape_que_reposiciona_o_cursor));
+  const char *sequencia_de_escape_que_limpa_a_tela = "\033[2J";
+  const char *sequencia_de_escape_que_reposiciona_o_cursor = "\033[1;1H";
+  if (construtor == NULL)
+  {
+    write (STDOUT_FILENO, sequencia_de_escape_que_limpa_a_tela, strlen (sequencia_de_escape_que_limpa_a_tela));
+    write (STDOUT_FILENO, sequencia_de_escape_que_reposiciona_o_cursor, strlen (sequencia_de_escape_que_reposiciona_o_cursor));
+  }
+  else
+  {
+    adicionar_string_construtor_string (construtor, sequencia_de_escape_que_limpa_a_tela, '\0');
+    adicionar_string_construtor_string (construtor, sequencia_de_escape_que_reposiciona_o_cursor, '\0');
+  }
 }
 
 /* FIM TERMINAL */
@@ -444,7 +492,7 @@ mapear_tecla_para_acao_do_editor (void)
 	switch (tecla)
 	{
 		case CTRL_KEY('q'):
-			limpar_tela ();
+			limpar_tela (NULL);
 			exit (EXIT_SUCCESS);
 			break;
 

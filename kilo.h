@@ -66,19 +66,25 @@ void
 pegar_total_linhas_colunas (void);
 
 void
-salvar_posicao_do_cursor (void);
+salvar_posicao_do_cursor (struct construtor_string *construtor);
 
 void
-restaurar_posicao_do_cursor (void);
+restaurar_posicao_do_cursor (struct construtor_string *construtor);
 
 void
-desenhar_til (void);
+desenhar_til (struct construtor_string *construtor);
+
+void
+esconder_cursor (struct construtor_string *construtor);
+
+void
+restaurar_cursor (struct construtor_string *construtor);
 
 void
 atutalizar_tela_do_editor (void);
 
 void
-limpar_tela (void);
+limpar_tela (struct construtor_string *construtor);
 
 /* FIM TERMINAL */
 
