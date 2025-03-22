@@ -1,0 +1,1 @@
+1 - fazer com que as funções que atualizan a tela pegue um buffer opcional 

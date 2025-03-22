@@ -401,12 +401,28 @@ desenhar_til (void)
 	
 }
 
+void
+esconder_cursor (void)
+{
+  // NOTA: olhar a essa sequência de escape e os modos do vt-100
+  const char *sequencia_esconde_cursor = "\033[?25l"; 
+  write (STDOUT_FILENO, sequencia_esconde_cursor, strlen(sequencia_esconde_cursor);
+}
+
+void
+restaurar_cursor (void)
+{
+ const char  
+
+}
 
 void
 atualizar_tela_do_editor (void)
 {
+  esconder_cursor ();
 	limpar_tela ();
 	desenhar_til ();
+  restaurar_cursor (); 
 }
 
 void
